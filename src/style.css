@@ -300,4 +300,20 @@ code {
   width: 100%;
   height: 13rem;
   color: black;
+  padding: 1rem;
+}
+
+.action {
+  text-align: left;
+}
+
+.character {
+  text-transform: uppercase;
+}
+
+.dialogue {
+  margin: 0 auto;
+  text-align: left;
+  display: black;
+  width: 10rem;
 }
