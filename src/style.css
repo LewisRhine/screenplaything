@@ -358,3 +358,91 @@ code {
     width: 58.333333%;
   }
 }
+
+.suggest {
+  position: relative;
+  display: inline-block;
+  background-color red;
+}
+
+.suggest-item {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  border-top: none;
+  z-index: 99;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+}
+
+.suggest-item div {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.suggest-item div:hover {
+  background-color: #e9e9e9;
+}
+
+.popup {
+  position: absolute;
+  z-index 10;
+  background-color black;
+  width: 10rem;
+  height: 10rem;
+}
+
+
+
+.autocomplete-container {
+  position: relative;
+  width: 300px;
+}
+
+#editable-input {
+  border: 1px solid #ccc;
+  padding: 8px;
+  min-height: 20px;
+  border-radius: 4px;
+}
+
+#editable-input:empty::before {
+  content: attr(placeholder);
+  color: #aaa;
+}
+
+#custom-datalist {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10%;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+#custom-datalist li {
+  padding: 8px;
+  cursor: pointer;
+}
+
+#custom-datalist li:hover {
+  background-color: #f0f0f0;
+}
+
+.hidden {
+  display: none !important;
+}
+/* Keep your previous styles, just append this rule */
+#custom-datalist li.highlighted {
+  background-color: #007fff; /* Visual indicator for keyboard selection */
+  color: white;
+}
