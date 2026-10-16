@@ -296,24 +296,65 @@ code {
 }
 
 .doc {
-  background-color: white;
-  width: 100%;
-  height: 13rem;
+  box-sizing: border-box;
+  width: 8.5in;
+  max-width: 100%;
+  min-height: 11in;
+  padding: 1in 1in 1in 1.5in;
+
+  background: white;
   color: black;
-  padding: 1rem;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12pt;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: left;
+
+  box-shadow: 0 4px 24px rgb(0 0 0 / 15%);
 }
 
 .action {
+  --block-gap: 0px;
+  margin: 0;
   text-align: left;
+}
+
+.doc > .action + .action,
+.doc > .dialogue + .action,
+.doc > .character + .action {
+  --block-gap: 12pt;
 }
 
 .character {
+  --block-gap: 12pt;
+  margin: 12pt 0 0 2.2in;
+  text-align: left;
   text-transform: uppercase;
 }
 
+.doc > .character:first-child {
+  --block-gap: 0px;
+}
+
 .dialogue {
-  margin: 0 auto;
+  --block-gap: 0px;
+  margin: 0 0 0 1in;
   text-align: left;
-  display: black;
-  width: 10rem;
+  display: block;
+  width: 3.5in;
+}
+
+@media (max-width: 850px) {
+  .doc {
+    padding: 24px;
+  }
+
+  .character {
+    margin-left: 36.666667%;
+  }
+
+  .dialogue {
+    margin-left: 16.666667%;
+    width: 58.333333%;
+  }
 }

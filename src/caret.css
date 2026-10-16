@@ -1,0 +1,62 @@
+.doc.smooth-caret-active {
+  caret-color: transparent;
+}
+
+.smooth-caret {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1.5px;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  transition: transform 80ms ease-out;
+}
+
+.smooth-caret span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  animation: caret-blink 1s step-end 500ms infinite;
+}
+
+.smooth-caret.is-moving span {
+  animation: none;
+}
+
+.smooth-caret span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  box-shadow:
+    calc(var(--trail-x, 0px) * 0.33) calc(var(--trail-y, 0px) * 0.33) 2px
+      color-mix(in srgb, currentColor 24%, transparent),
+    calc(var(--trail-x, 0px) * 0.66) calc(var(--trail-y, 0px) * 0.66) 3px
+      color-mix(in srgb, currentColor 14%, transparent),
+    var(--trail-x, 0px) var(--trail-y, 0px) 4px
+      color-mix(in srgb, currentColor 6%, transparent);
+  transition: opacity 80ms ease-out;
+}
+
+.smooth-caret.has-trail span::after {
+  opacity: 1;
+  transition: none;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc.smooth-caret-active {
+    caret-color: auto;
+  }
+
+  .smooth-caret {
+    display: none;
+  }
+}

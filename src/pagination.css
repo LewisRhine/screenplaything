@@ -1,0 +1,42 @@
+.paper-stack {
+  position: relative;
+  width: 8.5in;
+  max-width: 100%;
+}
+
+.paper-pages {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--code-bg);
+  pointer-events: none;
+  user-select: none;
+}
+
+.paper-page {
+  flex: 0 0 11in;
+  background: white;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 15%);
+}
+
+.paper-stack > .doc {
+  position: relative;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.paper-stack > .doc > * {
+  display: flow-root;
+  margin-top: calc(var(--block-gap, 0px) + var(--page-break-space, 0px));
+}
+
+.doc > [data-page-overflow]::before {
+  content: "";
+  float: left;
+  width: 100%;
+  height: var(--page-exclusion-height);
+  shape-outside: var(--page-exclusion-shape);
+}

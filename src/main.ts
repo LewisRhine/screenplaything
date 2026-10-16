@@ -1,4 +1,6 @@
 import { newState } from "./state";
+import { attachSmoothCaret } from "./caret";
+import { attachPagination } from "./pagination";
 import "./style.css";
 
 type Mode = "Actoin" | "Character" | "Dialogue";
@@ -18,7 +20,10 @@ const doc = newState({
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 <section id="center">
   <div id="mode" class="hero">Mode: </div>
-  <div id="doc" class="doc" tabindex="-1" contenteditable="true"></div>
+  <div class="paper-stack">
+    <div id="pages" class="paper-pages" aria-hidden="true"></div>
+    <div id="doc" class="doc" tabindex="-1" contenteditable="true"></div>
+  </div>
   <div id="hint"></div>
 </section>
 `;
@@ -31,6 +36,8 @@ const startDiv = document.createElement("div");
 startDiv.innerHTML = "<br>";
 startDiv.className = "action";
 docEle.append(startDiv);
+attachPagination(docEle, document.getElementById("pages")!);
+attachSmoothCaret(docEle);
 docEle.focus();
 
 doc.sub(() => {
@@ -55,7 +62,7 @@ function getCurrentDiv(): HTMLDivElement | null {
 }
 
 docEle.addEventListener("input", () => {
-  doc.body = docEle.innerText;
+  // doc.body = docEle.innerText;
 });
 
 docEle.addEventListener("keydown", (ev) => {
