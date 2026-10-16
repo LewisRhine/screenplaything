@@ -1,0 +1,111 @@
+#connection {
+  width: 8.5in;
+  max-width: 100%;
+  text-align: left;
+}
+
+.connection-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font: 14px/1.5 var(--sans);
+  letter-spacing: normal;
+}
+
+.connection-panel summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.connection-content {
+  display: grid;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.connection-panel label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.connection-panel textarea,
+.connection-panel input,
+.connection-panel button {
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  color: var(--text-h);
+  background: var(--bg);
+  font: inherit;
+}
+
+.connection-panel textarea,
+.connection-panel input {
+  width: 100%;
+  min-width: 0;
+}
+
+.connection-panel textarea {
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.connection-panel button {
+  cursor: pointer;
+}
+
+.connection-panel button:disabled,
+.connection-panel input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.connection-panel button:focus-visible,
+.connection-panel input:focus-visible,
+.connection-panel textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.connection-status {
+  color: var(--text-h);
+}
+
+.connection-error {
+  color: #c43838;
+}
+
+.connection-error:empty {
+  display: none;
+}
+
+.connection-message-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+
+.connection-message-form label {
+  flex: 1 1 180px;
+}
+
+.connection-messages {
+  max-height: 8rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
