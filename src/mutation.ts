@@ -1,68 +1,57 @@
-import { getCurrentDiv } from "./main"
-import { doc } from "./siteState"
+import { charPickerMenuKeys } from "./charPickerMenu/charPickerMenu";
+import { formateMenuKeys } from "./formateMenu/formateMenu";
+import { doc } from "./state/siteState";
 
-export function onEnter() {
-  const currentDiv = getCurrentDiv()!
-  if (currentDiv.id === "doc" || doc.suggestMenuOpen) return
+export function onEnter(currentElement: HTMLDivElement) {
+  if (doc.charPickerMenuOpen) return;
 
-  setTimeout(() => {
-    const nextDiv = currentDiv.nextElementSibling!
+  if (doc.mode === "Character") {
+    const name = currentElement.textContent.toUpperCase();
+    if (!doc.characters.includes(name)) doc.characters.push(name);
+    doc.mode = "Dialogue";
 
-    if (currentDiv?.className === "character") {
-      nextDiv.className = "dialogue"
-      doc.mode = "Dialogue"
-      doc.characters.push(currentDiv.innerText)
-    }
-    if (currentDiv?.className === "dialogue") {
-      nextDiv.className = "action"
-      doc.mode = "Action"
-    }
-  }, 0)
+    return;
+  }
+
+  if (doc.mode === "Dialogue") return (doc.mode = "Action");
 }
 
-export function onTab() {
-  const currentDiv = getCurrentDiv()!
-  if (currentDiv.textContent !== "") return
+export function onTab(currentElement: HTMLDivElement) {
+  if (currentElement.textContent !== "") return;
 
   if (doc.mode === "Action") {
-    currentDiv.className = "character"
-    doc.mode = "Character"
-    doc.suggestMenuOpen = doc.characters.length > 0
+    doc.mode = "Character";
+    doc.charPickerMenuOpen = doc.characters.length > 0;
   }
 }
 
-function suggestMenu(ev: KeyboardEvent) {
-  const { key } = ev
-  if (key === "ArrowUp" && doc.suggestMenuIndex > 0) {
-    ev.preventDefault()
-    doc.suggestMenuIndex--
-  }
-  if (key === "ArrowDown" && doc.suggestMenuIndex < 5 - 1) {
-    ev.preventDefault()
-    doc.suggestMenuIndex++
+export function onKeyDown(ev: KeyboardEvent, currentElement: HTMLDivElement) {
+  if (ev.key === "Enter") onEnter(currentElement);
+
+  if (ev.key === "Tab") {
+    ev.preventDefault();
+    onTab(currentElement);
+    return;
   }
 
-  if (key === "Enter") {
+  if (doc.mode === "Character") {
     setTimeout(() => {
-      const currentDiv = getCurrentDiv()!
-      const previousDiv = currentDiv.previousElementSibling!
-      previousDiv.textContent = doc.characters[doc.suggestMenuIndex] ?? ""
-      currentDiv.className = "dialogue"
-      doc.suggestMenuOpen = false
-    })
-  }
-}
+      const char = currentElement.textContent?.toUpperCase();
 
-export function onAnykeydown(ev: KeyboardEvent) {
-  if (doc.suggestMenuOpen) return suggestMenu(ev)
+      if (char === "") {
+        doc.charactersFilter = [];
+        doc.charPickerMenuOpen = true;
+        return;
+      }
 
-  const currentDiv = getCurrentDiv()!
-  if (currentDiv.className === "character") {
-    setTimeout(() => {
-      const filter = doc.characters.filter((value) =>
-        value.toUpperCase().includes(currentDiv.innerText),
-      )
-      // hintEle.innerText = filter.toString()
-    }, 0)
+      doc.charactersFilter = doc.characters.filter(
+        (value) => value.slice(0, char.length) === char,
+      );
+
+      doc.charPickerMenuOpen = doc.charactersFilter.length > 0;
+    }, 0);
   }
+
+  if (doc.charPickerMenuOpen) return charPickerMenuKeys(ev, currentElement);
+  if (doc.formateMenuOpen) return formateMenuKeys(ev);
 }
