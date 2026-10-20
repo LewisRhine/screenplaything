@@ -1,26 +1,23 @@
-import { newState, persist } from "../state";
+import { newState, persist } from "../state"
 
-type Mode = "Action" | "Character" | "Dialogue" | "Scene Heading";
+export type Mode = "Action" | "Character" | "Dialogue" | "Scene Heading"
 
-interface Line {
-  mode: Mode;
-  body: string;
-}
+type MenuModes = "closed" | "charPicker" | "formate" | "sceneDesignation"
+
+type SceneDesignation = "INT." | "EXT." | "INT./EXT."
+
+export const sceneDesignationsMenuItems: readonly SceneDesignation[] = ["INT.", "EXT.", "INT./EXT."]
+export const formateMenuItems: readonly Mode[] = ["Scene Heading", "Action", "Character", "Dialogue"]
 
 export const doc = newState({
-  mode: "Action" as Mode,
-  body: "",
-  lines: [] as Line[],
+    mode: "Action" as Mode,
+    body: "",
+    menuMode: "closed" as MenuModes,
+    menuIndex: 0,
+    menuItems: [] as string[],
 
-  characterBuffer: "",
-  characters: [] as string[],
-  charactersFilter: [] as string[],
-  charPickerMenuIndex: 0,
-  charPickerMenuOpen: false,
-
-  formateMenuOpen: false,
-  formateMenuIndex: 0,
-  formateMenuItems: ["Scene Heading", "Action", "Character", "Dialogue"] as Mode[]
-});
+    characters: [] as string[],
+    charactersFilter: [] as string[],
+})
 
 // persist({ doc })
