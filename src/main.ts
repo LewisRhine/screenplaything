@@ -28,10 +28,6 @@ menu.className = "suggest-menu"
 attachPagination(docEle, document.getElementById("pages")!)
 attachSmoothCaret(docEle)
 
-doc.sub(() => {
-    modeEle.innerText = `Mode: ${doc.mode}`
-})
-
 if (doc.body === "") {
     const startDiv = document.createElement("div")
     startDiv.className = "action"
@@ -43,20 +39,21 @@ if (doc.body === "") {
 }
 
 doc.sub(() => {
+    modeEle.innerText = `Mode: ${doc.mode}`
+
+    const currentDiv = getCurrentDiv()!
+
     if (doc.mode === "Action") {
-        const currentDiv = getCurrentDiv()!
         currentDiv.className = "action"
     }
     if (doc.mode === "Scene Heading") {
-        const currentDiv = getCurrentDiv()!
         currentDiv.className = "scene-heading"
     }
     if (doc.mode === "Character") {
-        const currentDiv = getCurrentDiv()!
         currentDiv.className = "character"
+        if (doc.characters.length > 0) doc.menuMode = "charPicker"
     }
     if (doc.mode === "Dialogue") {
-        const currentDiv = getCurrentDiv()!
         currentDiv.className = "dialogue"
     }
 })
@@ -65,9 +62,20 @@ doc.sub(() => {
     if (doc.menuMode === "closed") return menu.remove()
     else docEle.append(menu)
 
+    if (doc.menuMode === "charPicker") {
+        // const characters = doc.charactersFilter.length > 0 ? doc.charactersFilter : doc.characters
+        // console.log(characters);
+
+        menu.innerHTML = ""
+        doc.charactersFilter.forEach((item, index) => {
+            menu.innerHTML += `<li data-value="${item}" ${index === 0 ? `class="highlighted"` : " "}>${item}</li>`
+        })
+
+        return
+    }
+
     if (doc.menuMode === "sceneDesignation") doc.menuItems = [...sceneDesignationsMenuItems]
     if (doc.menuMode === "formate") doc.menuItems = [...formateMenuItems]
-    if (doc.menuMode === "charPicker") doc.menuItems = [...doc.charactersFilter]
 
     menu.innerHTML = ""
     doc.menuItems.forEach((item, index) => {
@@ -102,18 +110,12 @@ docEle.addEventListener("keydown", (ev) => {
 
     if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight" || key === "ArrowLeft") {
         setTimeout(() => {
-            const currentDiv = getCurrentDiv()
             const currentClass = getCurrentDiv()?.className ?? ""
             // todo celarn filter and chr menu if not char
             if (currentClass === "scene-heading") doc.mode = "Scene Heading"
             if (currentClass === "action") doc.mode = "Action"
             if (currentClass === "dialogue") doc.mode = "Dialogue"
-            if (currentClass === "character") {
-                doc.mode = "Character"
-                if (currentDiv?.textContent === "" && doc.characters.length > 0) {
-                    doc.menuMode = "charPicker"
-                }
-            }
+            if (currentClass === "character") doc.mode = "Character"
         }, 0)
     }
 

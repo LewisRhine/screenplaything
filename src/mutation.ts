@@ -13,12 +13,10 @@ export function onEnter(currentElement: HTMLDivElement) {
 }
 
 export function onTab(currentElement: HTMLDivElement) {
-    if (currentElement.textContent !== "") return
+    if (currentElement.textContent !== "" && doc.mode !== "Action") return
 
-    if (doc.mode === "Action") {
-        doc.mode = "Character"
-        if (doc.characters.length > 0) doc.menuMode = "charPicker"
-    }
+    doc.mode = "Character"
+    // if (doc.characters.length > 0) doc.menuMode = "charPicker"
 }
 
 export function onKeyDown(ev: KeyboardEvent, currentElement: HTMLDivElement) {
@@ -31,22 +29,22 @@ export function onKeyDown(ev: KeyboardEvent, currentElement: HTMLDivElement) {
     }
 
     // this is broken need to re think
-//     if (doc.mode === "Character") {
-//         setTimeout(() => {
-//             const char = currentElement.textContent?.toUpperCase()
-// 
-//             if (char === "") {
-//                 doc.charactersFilter = []
-//                 doc.menuMode = "charPicker"
-//                 return
-//             }
-// 
-//             doc.charactersFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
-// 
-//             if (doc.charactersFilter.length > 0) doc.menuMode = "charPicker"
-//         }, 0)
-//     }
-    
+    if (doc.mode === "Character") {
+        setTimeout(() => {
+            const char = currentElement.textContent?.toUpperCase()
+
+            // if (char === "") {
+            //     doc.charactersFilter = []
+            //     doc.menuMode = "charPicker"
+            //     return
+            // }
+
+            doc.charactersFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+
+            if (doc.charactersFilter.length > 0) doc.menuMode = "charPicker"
+        }, 0)
+    }
+
     if (doc.menuMode !== "closed") {
         if (key === "ArrowUp" || key === "ArrowDown") ev.preventDefault()
         if (key === "ArrowUp" && doc.menuIndex > 0) doc.menuIndex--
@@ -83,8 +81,4 @@ export function onKeyDown(ev: KeyboardEvent, currentElement: HTMLDivElement) {
         onTab(currentElement)
         return
     }
-
-
-
-    // if (doc.charPickerMenuOpen) return charPickerMenuKeys(ev, currentElement)
 }
