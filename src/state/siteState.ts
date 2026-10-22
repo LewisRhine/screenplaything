@@ -17,8 +17,15 @@ export const doc = newState({
   menuIndex: 0,
   menuItems: [] as string[],
 
-  characters: [] as string[],
+  characters: ["BOB", "MIKE"] as string[],
   charactersFilter: [] as string[],
 })
 
 // persist({ doc })
+
+
+export const sceneDesignationMenu = newState({
+  open: false,
+  menuIndex: 0,
+  menuItems: ["Scene Heading", "Action", "Character", "Dialogue"] as readonly Mode[],
+})

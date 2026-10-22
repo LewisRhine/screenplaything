@@ -50,14 +50,14 @@ doc.sub(() => {
 
   if (doc.mode === "Scene Heading") {
     currentDiv.className = "scene-heading"
-    if (!currentDiv.textContent) doc.menuMode = "sceneDesignation"
+    // if (!currentDiv.textContent) doc.menuMode = "sceneDesignation"
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
 
   if (doc.mode === "Character") {
     currentDiv.className = "character"
-    if (doc.characters.length > 0) doc.menuMode = "charPicker"
+    // if (doc.characters.length > 0) doc.menuMode = "charPicker"
   }
 })
 // --------
@@ -66,7 +66,7 @@ doc.sub(() => {
 
 doc.sub(() => {
   if (doc.menuMode === "closed") return menu.remove()
-  else docEle.append(menu)
+  else getCurrentDiv()?.append(menu)
 
   if (doc.menuMode === "sceneDesignation") {
     doc.menuItems = [...sceneDesignationsMenuItems]
@@ -110,18 +110,46 @@ docEle.addEventListener("keyup", () => {
 })
 
 docEle.addEventListener("keydown", (ev) => {
-  const { key } = ev
+  const { ctrlKey, key } = ev
 
-  // if (ctrlKey && key === "s") {
-  //     ev.preventDefault()
-  //     if (doc.menuMode === "sceneDesignation") doc.menuMode = "closed"
-  //     else doc.menuMode = "sceneDesignation"
-  // }
+  if (ctrlKey && key === " ") {
+    ev.preventDefault()
+    if (doc.menuMode !== "closed") return (doc.menuMode = "closed")
 
-  // if (ctrlKey && key === "a") {
-  //     ev.preventDefault()
-  //     setAction()
-  // }
+    if (doc.mode === "Scene Heading") doc.menuMode = "sceneDesignation"
+    if (doc.mode === "Character") doc.menuMode = "charPicker"
+  }
+
+  if (doc.menuMode !== "closed") {
+    if (key === "ArrowUp" || key === "ArrowDown") ev.preventDefault()
+    if (key === "ArrowUp" && doc.menuIndex > 0) doc.menuIndex--
+    if (key === "ArrowDown" && doc.menuIndex < doc.menuItems.length - 1) doc.menuIndex++
+
+    if (key === "Enter") {
+      if (doc.menuMode === "sceneDesignation") {
+        ev.preventDefault()
+        const currentElement = getCurrentDiv()!
+        setTimeout(() => {
+          currentElement.textContent = `${doc.menuItems[doc.menuIndex]}\u00A0`
+          const range = document.createRange()
+          range.selectNodeContents(currentElement)
+          range.collapse(false)
+
+          const selection = window.getSelection()
+          if (selection) {
+            selection.removeAllRanges()
+            selection.addRange(range)
+          }
+
+          doc.menuMode = "closed"
+        }, 0)
+
+        return
+      }
+    }
+
+    return
+  }
 
   if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight" || key === "ArrowLeft") {
     setTimeout(() => {
@@ -137,5 +165,5 @@ docEle.addEventListener("keydown", (ev) => {
   // if (doc.menuMode === "charPicker") return charPickerMenuKeys(ev, getCurrentDiv()!)
   // if (doc.menuMode === "format") return formatMenuKeys(ev)
 
-  onKeyDown(ev, getCurrentDiv()!)
+  // onKeyDown(ev, getCurrentDiv()!)
 })
