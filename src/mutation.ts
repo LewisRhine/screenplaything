@@ -1,6 +1,6 @@
 import { doc, type Mode } from "./state/siteState"
 
-export function onEnter(currentElement: HTMLDivElement) {
+export function onEnter(ev: KeyboardEvent, currentElement: HTMLDivElement) {
   if (doc.menuMode === "charPicker") {
     setTimeout(() => {
       currentElement.textContent = doc.menuItems[doc.menuIndex] ?? ""
@@ -9,7 +9,28 @@ export function onEnter(currentElement: HTMLDivElement) {
     // this feels bad! make find better way
     setTimeout(() => {
       doc.mode = "Dialogue"
+      doc.menuMode = "closed"
     }, 1)
+
+    return
+  }
+
+  if (doc.menuMode === "sceneDesignation") {
+    ev.preventDefault()
+    setTimeout(() => {
+      currentElement.textContent = `${doc.menuItems[doc.menuIndex]}\u00A0`
+      const range = document.createRange()
+      range.selectNodeContents(currentElement)
+      range.collapse(false)
+
+      const selection = window.getSelection()
+      if (selection) {
+        selection.removeAllRanges()
+        selection.addRange(range)
+      }
+
+      doc.menuMode = "closed"
+    }, 0)
 
     return
   }
@@ -52,7 +73,7 @@ export function onKeyDown(ev: KeyboardEvent, currentElement: HTMLDivElement) {
     }, 0)
   }
 
-  if (key === "Enter") onEnter(currentElement)
+  if (key === "Enter") onEnter(ev, currentElement)
 
   if (doc.menuMode !== "closed") {
     if (key === "ArrowUp" || key === "ArrowDown") ev.preventDefault()
@@ -61,7 +82,6 @@ export function onKeyDown(ev: KeyboardEvent, currentElement: HTMLDivElement) {
 
     return
   }
-
 
   if (ev.key === "Tab") {
     ev.preventDefault()

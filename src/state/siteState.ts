@@ -10,14 +10,14 @@ export const sceneDesignationsMenuItems: readonly SceneDesignation[] = ["INT.", 
 export const formatMenuItems: readonly Mode[] = ["Scene Heading", "Action", "Character", "Dialogue"]
 
 export const doc = newState({
-  mode: "Character" as Mode,
+  mode: "Scene Heading" as Mode,
   body: "",
 
   menuMode: "closed" as MenuModes,
   menuIndex: 0,
   menuItems: [] as string[],
 
-  characters: ["BOB", "MIKE"] as string[],
+  characters: [] as string[],
   charactersFilter: [] as string[],
 })
 

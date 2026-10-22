@@ -38,13 +38,21 @@ if (doc.body === "") {
   docEle.innerHTML = doc.body
 }
 
+// -------- Mode el
 doc.sub(() => {
   modeEle.innerText = `Mode: ${doc.mode}`
+
+  doc.menuMode = "closed"
 
   const currentDiv = getCurrentDiv()!
 
   if (doc.mode === "Action") currentDiv.className = "action"
-  if (doc.mode === "Scene Heading") currentDiv.className = "scene-heading"
+
+  if (doc.mode === "Scene Heading") {
+    currentDiv.className = "scene-heading"
+    if (!currentDiv.textContent) doc.menuMode = "sceneDesignation"
+  }
+
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
 
   if (doc.mode === "Character") {
@@ -52,20 +60,28 @@ doc.sub(() => {
     if (doc.characters.length > 0) doc.menuMode = "charPicker"
   }
 })
+// --------
+
+// -------- Menu
 
 doc.sub(() => {
   if (doc.menuMode === "closed") return menu.remove()
   else docEle.append(menu)
 
+  if (doc.menuMode === "sceneDesignation") {
+    doc.menuItems = [...sceneDesignationsMenuItems]
+  }
+
   if (doc.menuMode === "charPicker") {
     const char = getCurrentDiv()?.textContent?.toUpperCase()
     doc.menuItems = !char && doc.charactersFilter.length === 0 ? doc.characters : doc.charactersFilter
-
-    menu.innerHTML = ""
-    doc.menuItems.forEach((item, index) => {
-      menu.innerHTML += `<li data-value="${item}" ${index === 0 ? `class="highlighted"` : " "}>${item}</li>`
-    })
   }
+
+  // todo is this bad that it renders?
+  menu.innerHTML = ""
+  doc.menuItems.forEach((item, index) => {
+    menu.innerHTML += `<li data-value="${item}" ${index === doc.menuIndex ? `class="highlighted"` : " "}>${item}</li>`
+  })
 
   //   if (doc.menuMode === "sceneDesignation") doc.menuItems = [...sceneDesignationsMenuItems]
   //   if (doc.menuMode === "format") doc.menuItems = [...formatMenuItems]
@@ -77,11 +93,17 @@ doc.sub(() => {
   //   doc.menuIndex = 0
 })
 
-doc.sub(() => {
-  menu.children[doc.menuIndex - 1]?.classList.remove("highlighted")
-  menu.children[doc.menuIndex]?.classList.add("highlighted")
-  menu.children[doc.menuIndex + 1]?.classList.remove("highlighted")
-})
+// --------
+
+// doc.sub(() => {
+//   console.log("mmenu", menu.children[doc.menuIndex - 1])
+//   console.log("mmenu", menu.children[doc.menuIndex])
+//   console.log("mmenu", menu.children[doc.menuIndex + 1])
+//
+//   menu.children[doc.menuIndex - 1]?.classList.remove("highlighted")
+//   menu.children[doc.menuIndex]?.classList.add("highlighted")
+//   menu.children[doc.menuIndex + 1]?.classList.remove("highlighted")
+// })
 
 docEle.addEventListener("keyup", () => {
   doc.body = docEle.innerHTML
@@ -114,6 +136,6 @@ docEle.addEventListener("keydown", (ev) => {
 
   // if (doc.menuMode === "charPicker") return charPickerMenuKeys(ev, getCurrentDiv()!)
   // if (doc.menuMode === "format") return formatMenuKeys(ev)
-  
+
   onKeyDown(ev, getCurrentDiv()!)
 })
