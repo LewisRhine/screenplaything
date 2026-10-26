@@ -97,7 +97,7 @@ doc.sub(() => {
     // const char = getCurrentDiv()?.textContent.toUpperCase()
     const char = doc.characterBuffer
     doc.menuIndex = 0
-    doc.menuItems = !char && doc.charactersFilter.length === 0 ? doc.characters : doc.charactersFilter
+    doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? doc.characters : doc.menuItemsFilter
   }
   //   if (doc.menuMode === "sceneDesignation") doc.menuItems = [...sceneDesignationsMenuItems]
   //   if (doc.menuMode === "format") doc.menuItems = [...formatMenuItems]
@@ -108,7 +108,6 @@ doc.sub(() => {
   //   })
   //   doc.menuIndex = 0
 })
-
 
 doc.sub(() => {
   menu.innerHTML = ""
@@ -121,6 +120,11 @@ doc.sub(() => {
   menu.children[doc.menuIndex - 1]?.classList.remove("highlighted")
   menu.children[doc.menuIndex]?.classList.add("highlighted")
   menu.children[doc.menuIndex + 1]?.classList.remove("highlighted")
+})
+
+doc.sub(() => {
+  if (doc.menuItemsFilter.length === 0) doc.menuMode = "closed"
+  // if (doc.menuItemsFilter.length === 0) doc.menuMode = "closed"
 })
 
 // --------
@@ -160,13 +164,13 @@ docEle.addEventListener("keydown", (ev) => {
     if (!ctrlKey && key.length === 1) {
       doc.characterBuffer += key.toUpperCase()
       const char = doc.characterBuffer
-      doc.charactersFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+      doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
     }
 
     if (key === "Backspace") {
       doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
       const char = doc.characterBuffer
-      doc.charactersFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+      doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
     }
 
     if (key === "Enter") {
@@ -193,9 +197,9 @@ docEle.addEventListener("keydown", (ev) => {
     if (key === "Enter" && doc.menuMode === "closed") {
       const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
 
-      const prefix = match?.[1]?.trim() ?? ""
+      // const prefix = match?.[1]?.trim() ?? ""
       const location = match?.[2]?.trim() ?? ""
-      const time = match?.[3]?.trim() ?? ""
+      // const time = match?.[3]?.trim() ?? ""
 
       if (location && !doc.locations.includes(location)) doc.locations.push(location)
       doc.characterBuffer = ""
@@ -204,6 +208,8 @@ docEle.addEventListener("keydown", (ev) => {
   }
 
   if (doc.menuMode !== "closed") {
+    if (key === "Escape") doc.menuMode = "closed"
+
     if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight") ev.preventDefault()
     if (key === "ArrowUp" && doc.menuIndex > 0) doc.menuIndex--
     if (key === "ArrowDown" && doc.menuIndex < doc.menuItems.length - 1) doc.menuIndex++
@@ -212,20 +218,8 @@ docEle.addEventListener("keydown", (ev) => {
     if (key === "Enter") {
       if (doc.menuMode === "sceneDesignation") {
         ev.preventDefault()
-        // const currentElement = getCurrentDiv()!
         setTimeout(() => {
           document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
-
-          //           const range = document.createRange()
-          //           range.selectNodeContents(currentElement)
-          //           range.collapse(false)
-          //
-          //           const selection = window.getSelection()
-          //           if (selection) {
-          //             selection.removeAllRanges()
-          //             selection.addRange(range)
-          //           }
-          //
           doc.menuMode = doc.locations.length > 0 ? "sceneLocation" : "closed"
         }, 0)
 
@@ -262,7 +256,6 @@ docEle.addEventListener("keydown", (ev) => {
       const currentClass = getCurrentDiv()?.className ?? ""
       // todo celarn filter and chr menu if not char
       if (currentClass === "scene-heading") doc.mode = "Scene Heading"
-
       if (currentClass === "action") doc.mode = "Action"
       if (currentClass === "dialogue") doc.mode = "Dialogue"
       if (currentClass === "character") doc.mode = "Character"

@@ -23,7 +23,6 @@ export const doc = newState({
   characterBuffer: "",
   characters: [] as string[],
 
-  charactersFilter: [] as string[],
 })
 
 // persist({ doc })
