@@ -18,7 +18,7 @@ export const doc = newState({
   menuItems: [] as string[],
   menuItemsFilter: [] as string[],
 
-  locations: ["The house"] as string[],
+  locations: [] as string[],
   
   characterBuffer: "",
   characters: [] as string[],

@@ -54,12 +54,11 @@ doc.sub(() => {
     currentDiv.className = "scene-heading"
 
     if (!currentDiv.textContent) {
-      currentDiv. innerHTML = `<spain class="sceneDesignation"></spain><spain class="sceneLocation"></spain>`
       doc.menuMode = "sceneDesignation"
     }
-    if (sceneDesignationsMenuItems.some(item => currentDiv.textContent.includes(item))) {
-      doc.menuMode = "sceneLocation"
-    }
+    // if (sceneDesignationsMenuItems.some((item) => currentDiv.textContent.includes(item))) {
+    //   doc.menuMode = "sceneLocation"
+    // }
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
@@ -109,6 +108,7 @@ doc.sub(() => {
   //   })
   //   doc.menuIndex = 0
 })
+
 
 doc.sub(() => {
   menu.innerHTML = ""
@@ -190,12 +190,17 @@ docEle.addEventListener("keydown", (ev) => {
       doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
     }
 
-    // if (key === "Enter") {
-    //   const name = doc.characterBuffer
-    //   if (name && !doc.menuItems.includes(name)) doc.characters.push(name)
-    //   doc.characterBuffer = ""
-    //   doc.mode = "Dialogue"
-    // }
+    if (key === "Enter" && doc.menuMode === "closed") {
+      const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
+
+      const prefix = match?.[1]?.trim() ?? ""
+      const location = match?.[2]?.trim() ?? ""
+      const time = match?.[3]?.trim() ?? ""
+
+      if (location && !doc.locations.includes(location)) doc.locations.push(location)
+      doc.characterBuffer = ""
+      doc.mode = "Action"
+    }
   }
 
   if (doc.menuMode !== "closed") {
@@ -207,20 +212,33 @@ docEle.addEventListener("keydown", (ev) => {
     if (key === "Enter") {
       if (doc.menuMode === "sceneDesignation") {
         ev.preventDefault()
-        const currentElement = getCurrentDiv()!
+        // const currentElement = getCurrentDiv()!
         setTimeout(() => {
           document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
-          const range = document.createRange()
-          range.selectNodeContents(currentElement)
-          range.collapse(false)
 
-          const selection = window.getSelection()
-          if (selection) {
-            selection.removeAllRanges()
-            selection.addRange(range)
-          }
-
+          //           const range = document.createRange()
+          //           range.selectNodeContents(currentElement)
+          //           range.collapse(false)
+          //
+          //           const selection = window.getSelection()
+          //           if (selection) {
+          //             selection.removeAllRanges()
+          //             selection.addRange(range)
+          //           }
+          //
           doc.menuMode = doc.locations.length > 0 ? "sceneLocation" : "closed"
+        }, 0)
+
+        return
+      }
+
+      if (doc.menuMode === "sceneLocation") {
+        ev.preventDefault()
+        setTimeout(() => {
+          document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
+          doc.characterBuffer = `${doc.menuItems[doc.menuIndex]} `
+          doc.menuMode = "closed"
+          doc.menuItems = []
         }, 0)
 
         return
@@ -244,6 +262,7 @@ docEle.addEventListener("keydown", (ev) => {
       const currentClass = getCurrentDiv()?.className ?? ""
       // todo celarn filter and chr menu if not char
       if (currentClass === "scene-heading") doc.mode = "Scene Heading"
+
       if (currentClass === "action") doc.mode = "Action"
       if (currentClass === "dialogue") doc.mode = "Dialogue"
       if (currentClass === "character") doc.mode = "Character"
