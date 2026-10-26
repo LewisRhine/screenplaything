@@ -1,8 +1,7 @@
 import { attachSmoothCaret } from "./caret"
 import { getCurrentDiv } from "./getCurrentDiv"
-import { onKeyDown } from "./mutation"
 import { attachPagination } from "./pagination"
-import { doc, formatMenuItems, sceneDesignationsMenuItems } from "./state/siteState"
+import { doc, sceneDesignationsMenuItems } from "./state/siteState"
 import "./style.css"
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
@@ -40,9 +39,12 @@ if (doc.body === "") {
 
 // -------- Mode el
 doc.sub(() => {
-  modeEle.innerText = `Mode: ${doc.mode}`
+  if (doc.mode !== "Character") return (doc.characterBuffer = "")
+  doc.characterBuffer = getCurrentDiv()?.textContent ?? ""
+})
 
-  doc.menuMode = "closed"
+doc.sub(() => {
+  modeEle.innerText = `Mode: ${doc.mode}`
 
   const currentDiv = getCurrentDiv()!
 
@@ -50,14 +52,22 @@ doc.sub(() => {
 
   if (doc.mode === "Scene Heading") {
     currentDiv.className = "scene-heading"
-    // if (!currentDiv.textContent) doc.menuMode = "sceneDesignation"
+
+    if (!currentDiv.textContent) {
+      currentDiv. innerHTML = `<spain class="sceneDesignation"></spain><spain class="sceneLocation"></spain>`
+      doc.menuMode = "sceneDesignation"
+    }
+    if (sceneDesignationsMenuItems.some(item => currentDiv.textContent.includes(item))) {
+      doc.menuMode = "sceneLocation"
+    }
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
 
   if (doc.mode === "Character") {
     currentDiv.className = "character"
-    // if (doc.characters.length > 0) doc.menuMode = "charPicker"
+
+    if (doc.characters.length > 0 && doc.characterBuffer.length === 0) doc.menuMode = "charPicker"
   }
 })
 // --------
@@ -69,20 +79,27 @@ doc.sub(() => {
   else getCurrentDiv()?.append(menu)
 
   if (doc.menuMode === "sceneDesignation") {
-    doc.menuItems = [...sceneDesignationsMenuItems]
+    const char = doc.characterBuffer
+    doc.menuIndex = 0
+    doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? [...sceneDesignationsMenuItems] : doc.menuItemsFilter
+
+    // doc.menuItems = [...sceneDesignationsMenuItems]
+  }
+
+  if (doc.menuMode === "sceneLocation") {
+    const char = doc.characterBuffer
+    doc.menuIndex = 0
+    doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? [...doc.locations] : doc.menuItemsFilter
+
+    // doc.menuItems = [...sceneDesignationsMenuItems]
   }
 
   if (doc.menuMode === "charPicker") {
-    const char = getCurrentDiv()?.textContent?.toUpperCase()
+    // const char = getCurrentDiv()?.textContent.toUpperCase()
+    const char = doc.characterBuffer
+    doc.menuIndex = 0
     doc.menuItems = !char && doc.charactersFilter.length === 0 ? doc.characters : doc.charactersFilter
   }
-
-  // todo is this bad that it renders?
-  menu.innerHTML = ""
-  doc.menuItems.forEach((item, index) => {
-    menu.innerHTML += `<li data-value="${item}" ${index === doc.menuIndex ? `class="highlighted"` : " "}>${item}</li>`
-  })
-
   //   if (doc.menuMode === "sceneDesignation") doc.menuItems = [...sceneDesignationsMenuItems]
   //   if (doc.menuMode === "format") doc.menuItems = [...formatMenuItems]
   //
@@ -93,26 +110,29 @@ doc.sub(() => {
   //   doc.menuIndex = 0
 })
 
-// --------
+doc.sub(() => {
+  menu.innerHTML = ""
+  doc.menuItems.forEach((item, index) => {
+    menu.innerHTML += `<li data-value="${item}" ${index === 0 ? `class="highlighted"` : " "}>${item}</li>`
+  })
+})
 
-// doc.sub(() => {
-//   console.log("mmenu", menu.children[doc.menuIndex - 1])
-//   console.log("mmenu", menu.children[doc.menuIndex])
-//   console.log("mmenu", menu.children[doc.menuIndex + 1])
-//
-//   menu.children[doc.menuIndex - 1]?.classList.remove("highlighted")
-//   menu.children[doc.menuIndex]?.classList.add("highlighted")
-//   menu.children[doc.menuIndex + 1]?.classList.remove("highlighted")
-// })
+doc.sub(() => {
+  menu.children[doc.menuIndex - 1]?.classList.remove("highlighted")
+  menu.children[doc.menuIndex]?.classList.add("highlighted")
+  menu.children[doc.menuIndex + 1]?.classList.remove("highlighted")
+})
+
+// --------
 
 docEle.addEventListener("keyup", () => {
   doc.body = docEle.innerHTML
 })
 
 docEle.addEventListener("keydown", (ev) => {
-  const { ctrlKey, key } = ev
+  const { ctrlKey, shiftKey, key } = ev
 
-  if (ctrlKey && key === " ") {
+  if (ctrlKey && key === "m") {
     ev.preventDefault()
     if (doc.menuMode !== "closed") return (doc.menuMode = "closed")
 
@@ -120,17 +140,76 @@ docEle.addEventListener("keydown", (ev) => {
     if (doc.mode === "Character") doc.menuMode = "charPicker"
   }
 
+  if (key === "Tab") {
+    ev.preventDefault()
+    if (doc.menuMode !== "closed" || getCurrentDiv()?.textContent) return
+    if (doc.mode === "Character") return (doc.mode = "Action")
+    if (doc.mode === "Scene Heading") return (doc.mode = "Action")
+    if (doc.mode === "Action") {
+      if (shiftKey) doc.mode = "Scene Heading"
+      else doc.mode = "Character"
+      return
+    }
+  }
+
+  if (doc.mode === "Dialogue") {
+    if (key === "Enter") doc.mode = "Action"
+  }
+
+  if (doc.mode === "Character") {
+    if (!ctrlKey && key.length === 1) {
+      doc.characterBuffer += key.toUpperCase()
+      const char = doc.characterBuffer
+      doc.charactersFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+    }
+
+    if (key === "Backspace") {
+      doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
+      const char = doc.characterBuffer
+      doc.charactersFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+    }
+
+    if (key === "Enter") {
+      const name = doc.characterBuffer
+      if (name && !doc.characters.includes(name)) doc.characters.push(name)
+      doc.characterBuffer = ""
+      doc.mode = "Dialogue"
+    }
+  }
+
+  if (doc.mode === "Scene Heading") {
+    if (!ctrlKey && key.length === 1) {
+      doc.characterBuffer += key
+      const char = doc.characterBuffer
+      doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
+    }
+
+    if (key === "Backspace") {
+      doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
+      const char = doc.characterBuffer
+      doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
+    }
+
+    // if (key === "Enter") {
+    //   const name = doc.characterBuffer
+    //   if (name && !doc.menuItems.includes(name)) doc.characters.push(name)
+    //   doc.characterBuffer = ""
+    //   doc.mode = "Dialogue"
+    // }
+  }
+
   if (doc.menuMode !== "closed") {
-    if (key === "ArrowUp" || key === "ArrowDown") ev.preventDefault()
+    if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight") ev.preventDefault()
     if (key === "ArrowUp" && doc.menuIndex > 0) doc.menuIndex--
     if (key === "ArrowDown" && doc.menuIndex < doc.menuItems.length - 1) doc.menuIndex++
+    if (key === "ArrowLeft" && !doc.characterBuffer) doc.menuMode = "closed"
 
     if (key === "Enter") {
       if (doc.menuMode === "sceneDesignation") {
         ev.preventDefault()
         const currentElement = getCurrentDiv()!
         setTimeout(() => {
-          currentElement.textContent = `${doc.menuItems[doc.menuIndex]}\u00A0`
+          document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
           const range = document.createRange()
           range.selectNodeContents(currentElement)
           range.collapse(false)
@@ -141,18 +220,27 @@ docEle.addEventListener("keydown", (ev) => {
             selection.addRange(range)
           }
 
-          doc.menuMode = "closed"
+          doc.menuMode = doc.locations.length > 0 ? "sceneLocation" : "closed"
         }, 0)
 
         return
       }
-    }
 
+      if (doc.menuMode === "charPicker") {
+        // BUG if there is text in the char line it just add to it
+        document.execCommand("insertText", false, doc.menuItems[doc.menuIndex] ?? "")
+        doc.mode = "Dialogue"
+        doc.menuMode = "closed"
+
+        return
+      }
+    }
     return
   }
 
-  if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight" || key === "ArrowLeft") {
+  if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight" || key === "ArrowLeft" || key === "Backspace") {
     setTimeout(() => {
+      doc.menuMode = "closed"
       const currentClass = getCurrentDiv()?.className ?? ""
       // todo celarn filter and chr menu if not char
       if (currentClass === "scene-heading") doc.mode = "Scene Heading"

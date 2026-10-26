@@ -1,8 +1,8 @@
-import { newState, persist } from "../state"
+import { newState } from "../state"
 
 export type Mode = "Action" | "Character" | "Dialogue" | "Scene Heading"
 
-type MenuModes = "closed" | "charPicker" | "format" | "sceneDesignation"
+type MenuModes = "closed" | "charPicker" | "format" | "sceneDesignation" | "sceneLocation"
 
 type SceneDesignation = "INT." | "EXT." | "INT./EXT."
 
@@ -10,19 +10,23 @@ export const sceneDesignationsMenuItems: readonly SceneDesignation[] = ["INT.", 
 export const formatMenuItems: readonly Mode[] = ["Scene Heading", "Action", "Character", "Dialogue"]
 
 export const doc = newState({
-  mode: "Scene Heading" as Mode,
+  mode: "Action" as Mode,
   body: "",
 
   menuMode: "closed" as MenuModes,
   menuIndex: 0,
   menuItems: [] as string[],
+  menuItemsFilter: [] as string[],
 
-  characters: ["BOB", "MIKE"] as string[],
+  locations: ["The house"] as string[],
+  
+  characterBuffer: "",
+  characters: [] as string[],
+
   charactersFilter: [] as string[],
 })
 
 // persist({ doc })
-
 
 export const sceneDesignationMenu = newState({
   open: false,

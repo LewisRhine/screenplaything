@@ -1,4 +1,4 @@
-import { doc, type Mode } from "./state/siteState"
+import { doc } from "./state/siteState"
 
 export function onEnter(ev: KeyboardEvent, currentElement: HTMLDivElement) {
   if (doc.menuMode === "charPicker") {
