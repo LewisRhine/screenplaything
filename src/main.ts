@@ -2,7 +2,7 @@ import { attachSmoothCaret } from "./caret"
 import { getCurrentDiv } from "./getCurrentDiv"
 import { isCaretAtEnd } from "./isCaretAtEnd"
 import { attachPagination } from "./pagination"
-import { doc, sceneDesignationsMenuItems } from "./state/siteState"
+import { doc, sceneDesignationsMenuItems, sceneTimeMenuItems } from "./state/siteState"
 import "./style.css"
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
@@ -63,6 +63,7 @@ doc.sub(() => {
     const time = match?.[3]?.trim() ?? ""
 
     if (prefix && !location && isCaretAtEnd(docEle)) doc.menuMode = "sceneLocation"
+    if (prefix && location && !time && isCaretAtEnd(docEle)) doc.menuMode = "sceneTime"
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
@@ -94,6 +95,12 @@ doc.sub(() => {
     doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? [...doc.locations] : doc.menuItemsFilter
 
     // doc.menuItems = [...sceneDesignationsMenuItems]
+  }
+
+  if (doc.menuMode === "sceneTime") {
+    const char = doc.characterBuffer
+    doc.menuIndex = 0
+    doc.menuItems = !char || doc.menuItemsFilter.length === 0 ? (sceneTimeMenuItems as string[]) : doc.menuItemsFilter
   }
 
   if (doc.menuMode === "charPicker") {
@@ -224,21 +231,33 @@ docEle.addEventListener("keydown", (ev) => {
     if (key === "Enter") {
       if (doc.menuMode === "sceneDesignation") {
         ev.preventDefault()
-        document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
-        // doc.menuMode = doc.locations.length > 0 ? "sceneLocation" : "closed"
+        const item = `${doc.menuItems[doc.menuIndex]} `
+        document.execCommand("insertText", false, item)
+        doc.characterBuffer = item
         doc.menuMode = "closed"
+        doc.menuItems = []
 
         return
       }
 
       if (doc.menuMode === "sceneLocation") {
         ev.preventDefault()
-        setTimeout(() => {
-          document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
-          doc.characterBuffer = `${doc.menuItems[doc.menuIndex]} `
-          doc.menuMode = "closed"
-          doc.menuItems = []
-        }, 0)
+        const item = `${doc.menuItems[doc.menuIndex]} `
+        document.execCommand("insertText", false, item)
+        doc.characterBuffer = item
+        doc.menuMode = "closed"
+        doc.menuItems = []
+
+        return
+      }
+
+      if (doc.menuMode === "sceneTime") {
+        ev.preventDefault()
+        const item = ` ${doc.menuItems[doc.menuIndex]}`
+        document.execCommand("insertText", false, item)
+        doc.characterBuffer = item
+        doc.menuMode = "closed"
+        doc.menuItems = []
 
         return
       }

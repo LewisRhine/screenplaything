@@ -2,7 +2,7 @@ import { newState } from "../state"
 
 export type Mode = "Action" | "Character" | "Dialogue" | "Scene Heading"
 
-type MenuModes = "closed" | "charPicker" | "format" | "sceneDesignation" | "sceneLocation"
+type MenuModes = "closed" | "charPicker" | "format" | "sceneDesignation" | "sceneLocation" | "sceneTime"
 
 type SceneDesignation = "INT." | "EXT." | "INT./EXT."
 
