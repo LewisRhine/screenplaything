@@ -1,5 +1,6 @@
 import { attachSmoothCaret } from "./caret"
 import { getCurrentDiv } from "./getCurrentDiv"
+import { isCaretAtEnd } from "./isCaretAtEnd"
 import { attachPagination } from "./pagination"
 import { doc, sceneDesignationsMenuItems } from "./state/siteState"
 import "./style.css"
@@ -53,12 +54,15 @@ doc.sub(() => {
   if (doc.mode === "Scene Heading") {
     currentDiv.className = "scene-heading"
 
-    if (!currentDiv.textContent) {
-      doc.menuMode = "sceneDesignation"
-    }
-    // if (sceneDesignationsMenuItems.some((item) => currentDiv.textContent.includes(item))) {
-    //   doc.menuMode = "sceneLocation"
-    // }
+    if (!currentDiv.textContent) doc.menuMode = "sceneDesignation"
+
+    const match = currentDiv.textContent.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
+
+    const prefix = match?.[1]?.trim() ?? ""
+    const location = match?.[2]?.trim() ?? ""
+    const time = match?.[3]?.trim() ?? ""
+
+    if (prefix && !location && isCaretAtEnd(docEle)) doc.menuMode = "sceneLocation"
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
@@ -80,9 +84,8 @@ doc.sub(() => {
   if (doc.menuMode === "sceneDesignation") {
     const char = doc.characterBuffer
     doc.menuIndex = 0
-    doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? [...sceneDesignationsMenuItems] : doc.menuItemsFilter
-
-    // doc.menuItems = [...sceneDesignationsMenuItems]
+    doc.menuItems =
+      !char || doc.menuItemsFilter.length === 0 ? (sceneDesignationsMenuItems as string[]) : doc.menuItemsFilter
   }
 
   if (doc.menuMode === "sceneLocation") {
@@ -96,6 +99,9 @@ doc.sub(() => {
   if (doc.menuMode === "charPicker") {
     // const char = getCurrentDiv()?.textContent.toUpperCase()
     const char = doc.characterBuffer
+
+    console.log({ char }, !char, doc.menuItemsFilter)
+
     doc.menuIndex = 0
     doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? doc.characters : doc.menuItemsFilter
   }
@@ -183,7 +189,7 @@ docEle.addEventListener("keydown", (ev) => {
 
   if (doc.mode === "Scene Heading") {
     if (!ctrlKey && key.length === 1) {
-      doc.characterBuffer += key
+      doc.characterBuffer += key.toLocaleUpperCase()
       const char = doc.characterBuffer
       doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
     }
@@ -218,10 +224,9 @@ docEle.addEventListener("keydown", (ev) => {
     if (key === "Enter") {
       if (doc.menuMode === "sceneDesignation") {
         ev.preventDefault()
-        setTimeout(() => {
-          document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
-          doc.menuMode = doc.locations.length > 0 ? "sceneLocation" : "closed"
-        }, 0)
+        document.execCommand("insertText", false, `${doc.menuItems[doc.menuIndex]}\u00A0`)
+        // doc.menuMode = doc.locations.length > 0 ? "sceneLocation" : "closed"
+        doc.menuMode = "closed"
 
         return
       }
