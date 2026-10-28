@@ -20,6 +20,9 @@ export const doc = newState({
   menuItemsFilter: [] as string[],
 
   locations: ["The House"] as string[],
+  sceneDesBufffer: "",
+  sceneLocationBufffer: "",
+  sceneTimeBuffer: "",
 
   characterBuffer: "",
   characters: [] as string[],

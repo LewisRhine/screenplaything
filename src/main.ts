@@ -38,10 +38,22 @@ if (doc.body === "") {
   docEle.innerHTML = doc.body
 }
 
+doc.sub(() => {
+  if (doc.mode === "Scene Heading") {
+    const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
+    doc.sceneDesBufffer = match?.[1]?.trim() ?? ""
+    doc.sceneLocationBufffer = match?.[2]?.trim() ?? ""
+    doc.sceneTimeBuffer = match?.[3]?.trim() ?? ""
+  }
+})
+
 // -------- Mode el
 doc.sub(() => {
-  if (doc.mode !== "Character") return (doc.characterBuffer = "")
+  // this is so the mode get is pickedup kind of an issue with the state sytem.
+  if (!doc.mode) return
+
   doc.characterBuffer = getCurrentDiv()?.textContent ?? ""
+  // if (doc.mode !== "Character") return (doc.characterBuffer = "")
 })
 
 doc.sub(() => {
@@ -53,17 +65,11 @@ doc.sub(() => {
 
   if (doc.mode === "Scene Heading") {
     currentDiv.className = "scene-heading"
+    const { sceneDesBufffer, sceneLocationBufffer, sceneTimeBuffer } = doc
 
-    if (!currentDiv.textContent) doc.menuMode = "sceneDesignation"
-
-    const match = currentDiv.textContent.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
-
-    const prefix = match?.[1]?.trim() ?? ""
-    const location = match?.[2]?.trim() ?? ""
-    const time = match?.[3]?.trim() ?? ""
-
-    if (prefix && !location && isCaretAtEnd(docEle)) doc.menuMode = "sceneLocation"
-    if (prefix && location && !time && isCaretAtEnd(docEle)) doc.menuMode = "sceneTime"
+    if (!sceneDesBufffer && !sceneLocationBufffer && !sceneTimeBuffer) doc.menuMode = "sceneDesignation"
+    if (sceneDesBufffer && !sceneLocationBufffer && isCaretAtEnd(docEle)) doc.menuMode = "sceneLocation"
+    if (sceneDesBufffer && sceneLocationBufffer && !sceneTimeBuffer && isCaretAtEnd(docEle)) doc.menuMode = "sceneTime"
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
@@ -90,15 +96,15 @@ doc.sub(() => {
   }
 
   if (doc.menuMode === "sceneLocation") {
-    const char = doc.characterBuffer
+    const char = doc.sceneLocationBufffer
     doc.menuIndex = 0
     doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? [...doc.locations] : doc.menuItemsFilter
-
+    
     // doc.menuItems = [...sceneDesignationsMenuItems]
   }
 
   if (doc.menuMode === "sceneTime") {
-    const char = doc.characterBuffer
+    const char = doc.sceneTimeBuffer
     doc.menuIndex = 0
     doc.menuItems = !char || doc.menuItemsFilter.length === 0 ? (sceneTimeMenuItems as string[]) : doc.menuItemsFilter
   }
@@ -137,7 +143,6 @@ doc.sub(() => {
 
 doc.sub(() => {
   if (doc.menuItemsFilter.length === 0) doc.menuMode = "closed"
-  // if (doc.menuItemsFilter.length === 0) doc.menuMode = "closed"
 })
 
 // --------
