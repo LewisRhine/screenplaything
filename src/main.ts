@@ -2,7 +2,7 @@ import { attachSmoothCaret } from "./caret"
 import { getCurrentDiv } from "./getCurrentDiv"
 import { isCaretAtEnd } from "./isCaretAtEnd"
 import { attachPagination } from "./pagination"
-import { doc, sceneDesignationsMenuItems, sceneTimeMenuItems } from "./state/siteState"
+import { caretPosition, doc, sceneDesignationsMenuItems, sceneTimeMenuItems } from "./state/siteState"
 import "./style.css"
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
@@ -40,10 +40,36 @@ if (doc.body === "") {
 
 doc.sub(() => {
   if (doc.mode === "Scene Heading") {
-    const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
+    const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?([^-]+?)(?:\s*-\s*(.*))?$/)
+
     doc.sceneDesBuffer = match?.[1]?.trim() ?? ""
     doc.sceneLocationBuffer = match?.[2]?.trim() ?? ""
     doc.sceneTimeBuffer = match?.[3]?.trim() ?? ""
+  }
+})
+
+caretPosition.sub(() => {
+  // this is so the mode get is pickedup kind of an issue with the state sytem.
+  if (!caretPosition.height && !caretPosition.left && !caretPosition.top) return
+  const currentDiv = getCurrentDiv()
+  if (!currentDiv) return
+
+  if (doc.mode === "Scene Heading") {
+    const { sceneDesBuffer, sceneLocationBuffer, sceneTimeBuffer } = doc
+
+    const timeMode = doc.characterBuffer.at(-1) === "-"
+
+    if (!sceneDesBuffer && !sceneLocationBuffer && !sceneTimeBuffer) doc.menuMode = "sceneDesignation"
+    if (sceneDesBuffer && !sceneLocationBuffer && isCaretAtEnd(currentDiv)) doc.menuMode = "sceneLocation"
+    if (sceneDesBuffer && sceneLocationBuffer && !sceneTimeBuffer && isCaretAtEnd(currentDiv) && timeMode)
+      doc.menuMode = "sceneTime"
+  }
+
+  if (doc.mode === "Character") {
+    if (doc.characterBuffer.at(-1) === "(" && isCaretAtEnd(currentDiv)) doc.menuMode = "charExt"
+
+    if (doc.characters.length === 0) return
+    if (!doc.characterBuffer) doc.menuMode = "charPicker"
   }
 })
 
@@ -51,9 +77,8 @@ doc.sub(() => {
 doc.sub(() => {
   // this is so the mode get is pickedup kind of an issue with the state sytem.
   if (!doc.mode) return
-
+  // this is odd but i need it here for when the user does a select delete, should find better way
   doc.characterBuffer = getCurrentDiv()?.textContent ?? ""
-  // if (doc.mode !== "Character") return (doc.characterBuffer = "")
 })
 
 doc.sub(() => {
@@ -63,25 +88,9 @@ doc.sub(() => {
   if (!currentDiv) return
 
   if (doc.mode === "Action") currentDiv.className = "action"
-
-  if (doc.mode === "Scene Heading") {
-    currentDiv.className = "scene-heading"
-    const { sceneDesBuffer, sceneLocationBuffer, sceneTimeBuffer } = doc
-
-    // const timeMode = doc.characterBuffer.las/
-    
-    if (!sceneDesBuffer && !sceneLocationBuffer && !sceneTimeBuffer) doc.menuMode = "sceneDesignation"
-    if (sceneDesBuffer && !sceneLocationBuffer && isCaretAtEnd(currentDiv)) doc.menuMode = "sceneLocation"
-    if (sceneDesBuffer && sceneLocationBuffer && !sceneTimeBuffer && isCaretAtEnd(docEle)) doc.menuMode = "sceneTime"
-  }
-
+  if (doc.mode === "Scene Heading") currentDiv.className = "scene-heading"
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
-
-  if (doc.mode === "Character") {
-    currentDiv.className = "character"
-
-    if (doc.characters.length > 0 && doc.characterBuffer.length === 0) doc.menuMode = "charPicker"
-  }
+  if (doc.mode === "Character") currentDiv.className = "character"
 })
 // --------
 
@@ -114,6 +123,11 @@ doc.sub(() => {
     const char = doc.characterBuffer
     doc.menuIndex = 0
     doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? doc.characters : doc.menuItemsFilter
+  }
+
+  if (doc.menuMode === "charExt") {
+    doc.menuIndex = 0
+    doc.menuItems = doc.characterExts
   }
 })
 
@@ -172,7 +186,6 @@ docEle.addEventListener("keydown", (ev) => {
       ev.preventDefault()
       const item = `${doc.menuItems[doc.menuIndex]} `
       document.execCommand("insertText", false, item)
-      doc.characterBuffer = item
       doc.menuMode = "closed"
       doc.menuItems = []
 
@@ -183,7 +196,6 @@ docEle.addEventListener("keydown", (ev) => {
       ev.preventDefault()
       const item = `${doc.menuItems[doc.menuIndex]} `
       document.execCommand("insertText", false, item)
-      doc.characterBuffer = item
       doc.menuMode = "closed"
       doc.menuItems = []
 
@@ -194,7 +206,6 @@ docEle.addEventListener("keydown", (ev) => {
       ev.preventDefault()
       const item = ` ${doc.menuItems[doc.menuIndex]}`
       document.execCommand("insertText", false, item)
-      doc.characterBuffer = item
       doc.menuMode = "closed"
       doc.menuItems = []
 
@@ -205,6 +216,15 @@ docEle.addEventListener("keydown", (ev) => {
       getCurrentDiv()!.textContent = ""
       doc.characterBuffer = ""
       document.execCommand("insertText", false, doc.menuItems[doc.menuIndex] ?? "")
+      return
+    }
+
+    if (doc.menuMode === "charExt") {
+      const item = `${doc.menuItems[doc.menuIndex]})`
+      document.execCommand("insertText", false, item)
+      doc.menuMode = "closed"
+      doc.menuItems = []
+
       return
     }
   }
@@ -235,7 +255,13 @@ docEle.addEventListener("input", (ev) => {
         return
       }
 
-      const name = doc.characterBuffer
+      if (doc.menuMode === "charExt") {
+        doc.menuMode = "closed"
+        doc.mode = "Dialogue"
+        return
+      }
+
+      const name = doc.characterBuffer.replace(/\([^)]*\)/g, '').trim()
       if (name && !doc.characters.includes(name)) doc.characters.push(name)
       doc.characterBuffer = ""
       doc.mode = "Dialogue"
@@ -263,6 +289,7 @@ docEle.addEventListener("input", (ev) => {
     // }
 
     if (inputType === "insertParagraph") {
+      //todo imp all this
       const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
 
       // const prefix = match?.[1]?.trim() ?? ""
