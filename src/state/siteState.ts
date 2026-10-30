@@ -4,9 +4,9 @@ export type Mode = "Action" | "Character" | "Dialogue" | "Scene Heading"
 
 type MenuModes = "closed" | "charPicker" | "format" | "sceneDesignation" | "sceneLocation" | "sceneTime"
 
-type SceneDesignation = "INT." | "EXT." | "INT./EXT."
+type SceneDesignation = "INT." | "EXT." | "INT/EXT."
 
-export const sceneDesignationsMenuItems: readonly SceneDesignation[] = ["INT.", "EXT.", "INT./EXT."]
+export const sceneDesignationsMenuItems: readonly SceneDesignation[] = ["INT.", "EXT.", "INT/EXT."]
 export const sceneTimeMenuItems: readonly string[] = ["Day", "Night"]
 export const formatMenuItems: readonly Mode[] = ["Scene Heading", "Action", "Character", "Dialogue"]
 
@@ -20,8 +20,8 @@ export const doc = newState({
   menuItemsFilter: [] as string[],
 
   locations: ["The House"] as string[],
-  sceneDesBufffer: "",
-  sceneLocationBufffer: "",
+  sceneDesBuffer: "",
+  sceneLocationBuffer: "",
   sceneTimeBuffer: "",
 
   characterBuffer: "",

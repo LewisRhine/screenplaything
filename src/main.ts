@@ -41,8 +41,8 @@ if (doc.body === "") {
 doc.sub(() => {
   if (doc.mode === "Scene Heading") {
     const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
-    doc.sceneDesBufffer = match?.[1]?.trim() ?? ""
-    doc.sceneLocationBufffer = match?.[2]?.trim() ?? ""
+    doc.sceneDesBuffer = match?.[1]?.trim() ?? ""
+    doc.sceneLocationBuffer = match?.[2]?.trim() ?? ""
     doc.sceneTimeBuffer = match?.[3]?.trim() ?? ""
   }
 })
@@ -59,17 +59,20 @@ doc.sub(() => {
 doc.sub(() => {
   modeEle.innerText = `Mode: ${doc.mode}`
 
-  const currentDiv = getCurrentDiv()!
+  const currentDiv = getCurrentDiv()
+  if (!currentDiv) return
 
   if (doc.mode === "Action") currentDiv.className = "action"
 
   if (doc.mode === "Scene Heading") {
     currentDiv.className = "scene-heading"
-    const { sceneDesBufffer, sceneLocationBufffer, sceneTimeBuffer } = doc
+    const { sceneDesBuffer, sceneLocationBuffer, sceneTimeBuffer } = doc
 
-    if (!sceneDesBufffer && !sceneLocationBufffer && !sceneTimeBuffer) doc.menuMode = "sceneDesignation"
-    if (sceneDesBufffer && !sceneLocationBufffer && isCaretAtEnd(docEle)) doc.menuMode = "sceneLocation"
-    if (sceneDesBufffer && sceneLocationBufffer && !sceneTimeBuffer && isCaretAtEnd(docEle)) doc.menuMode = "sceneTime"
+    // const timeMode = doc.characterBuffer.las/
+    
+    if (!sceneDesBuffer && !sceneLocationBuffer && !sceneTimeBuffer) doc.menuMode = "sceneDesignation"
+    if (sceneDesBuffer && !sceneLocationBuffer && isCaretAtEnd(currentDiv)) doc.menuMode = "sceneLocation"
+    if (sceneDesBuffer && sceneLocationBuffer && !sceneTimeBuffer && isCaretAtEnd(docEle)) doc.menuMode = "sceneTime"
   }
 
   if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
@@ -96,11 +99,9 @@ doc.sub(() => {
   }
 
   if (doc.menuMode === "sceneLocation") {
-    const char = doc.sceneLocationBufffer
+    const char = doc.sceneLocationBuffer
     doc.menuIndex = 0
     doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? [...doc.locations] : doc.menuItemsFilter
-    
-    // doc.menuItems = [...sceneDesignationsMenuItems]
   }
 
   if (doc.menuMode === "sceneTime") {
@@ -110,22 +111,10 @@ doc.sub(() => {
   }
 
   if (doc.menuMode === "charPicker") {
-    // const char = getCurrentDiv()?.textContent.toUpperCase()
     const char = doc.characterBuffer
-
-    console.log({ char }, !char, doc.menuItemsFilter)
-
     doc.menuIndex = 0
     doc.menuItems = !char && doc.menuItemsFilter.length === 0 ? doc.characters : doc.menuItemsFilter
   }
-  //   if (doc.menuMode === "sceneDesignation") doc.menuItems = [...sceneDesignationsMenuItems]
-  //   if (doc.menuMode === "format") doc.menuItems = [...formatMenuItems]
-  //
-  //   menu.innerHTML = ""
-  //   doc.menuItems.forEach((item, index) => {
-  //     menu.innerHTML += `<li data-value="${item}" ${index === 0 ? `class="highlighted"` : " "}>${item}</li>`
-  //   })
-  //   doc.menuIndex = 0
 })
 
 doc.sub(() => {
@@ -147,17 +136,12 @@ doc.sub(() => {
 
 // --------
 
-docEle.addEventListener("keyup", () => {
-  doc.body = docEle.innerHTML
-})
-
 docEle.addEventListener("keydown", (ev) => {
   const { ctrlKey, shiftKey, key } = ev
 
   if (ctrlKey && key === "m") {
     ev.preventDefault()
     if (doc.menuMode !== "closed") return (doc.menuMode = "closed")
-
     if (doc.mode === "Scene Heading") doc.menuMode = "sceneDesignation"
     if (doc.mode === "Character") doc.menuMode = "charPicker"
   }
@@ -174,45 +158,111 @@ docEle.addEventListener("keydown", (ev) => {
     }
   }
 
-  if (doc.mode === "Dialogue") {
-    if (key === "Enter") doc.mode = "Action"
+  if (doc.menuMode !== "closed") {
+    if (key === "Escape") doc.menuMode = "closed"
+
+    if (key === "ArrowUp" || key === "ArrowDown") ev.preventDefault()
+    if (key === "ArrowUp" && doc.menuIndex > 0) doc.menuIndex--
+    if (key === "ArrowDown" && doc.menuIndex < doc.menuItems.length - 1) doc.menuIndex++
+    if (key === "ArrowLeft" && !doc.characterBuffer) doc.menuMode = "closed"
+
+    if (key !== "Enter") return
+
+    if (doc.menuMode === "sceneDesignation") {
+      ev.preventDefault()
+      const item = `${doc.menuItems[doc.menuIndex]} `
+      document.execCommand("insertText", false, item)
+      doc.characterBuffer = item
+      doc.menuMode = "closed"
+      doc.menuItems = []
+
+      return
+    }
+
+    if (doc.menuMode === "sceneLocation") {
+      ev.preventDefault()
+      const item = `${doc.menuItems[doc.menuIndex]} `
+      document.execCommand("insertText", false, item)
+      doc.characterBuffer = item
+      doc.menuMode = "closed"
+      doc.menuItems = []
+
+      return
+    }
+
+    if (doc.menuMode === "sceneTime") {
+      ev.preventDefault()
+      const item = ` ${doc.menuItems[doc.menuIndex]}`
+      document.execCommand("insertText", false, item)
+      doc.characterBuffer = item
+      doc.menuMode = "closed"
+      doc.menuItems = []
+
+      return
+    }
+
+    if (doc.menuMode === "charPicker") {
+      getCurrentDiv()!.textContent = ""
+      doc.characterBuffer = ""
+      document.execCommand("insertText", false, doc.menuItems[doc.menuIndex] ?? "")
+      return
+    }
+  }
+})
+
+docEle.addEventListener("input", (ev) => {
+  doc.body = docEle.innerHTML
+
+  const { data, inputType } = ev
+
+  if (data) {
+    doc.characterBuffer += data.toUpperCase()
+    const char = doc.characterBuffer
+    doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+  }
+
+  if (inputType === "deleteContentBackward") {
+    doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
+    const char = doc.characterBuffer
+    doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
   }
 
   if (doc.mode === "Character") {
-    if (!ctrlKey && key.length === 1) {
-      doc.characterBuffer += key.toUpperCase()
-      const char = doc.characterBuffer
-      doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
-    }
+    if (inputType === "insertParagraph") {
+      if (doc.menuMode === "charPicker") {
+        doc.menuMode = "closed"
+        doc.mode = "Dialogue"
+        return
+      }
 
-    if (key === "Backspace") {
-      doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
-      const char = doc.characterBuffer
-      doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
-    }
-
-    if (key === "Enter") {
       const name = doc.characterBuffer
       if (name && !doc.characters.includes(name)) doc.characters.push(name)
       doc.characterBuffer = ""
       doc.mode = "Dialogue"
     }
+
+    return
+  }
+
+  if (doc.mode === "Dialogue") {
+    if (inputType === "insertParagraph") doc.mode = "Action"
+    return
   }
 
   if (doc.mode === "Scene Heading") {
-    if (!ctrlKey && key.length === 1) {
-      doc.characterBuffer += key.toLocaleUpperCase()
-      const char = doc.characterBuffer
-      doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
-    }
+    // if (data) {
+    //   doc.characterBuffer += data.toLocaleUpperCase()
+    //   const char = doc.characterBuffer
+    //   doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
+    // }
 
-    if (key === "Backspace") {
-      doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
-      const char = doc.characterBuffer
-      doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
-    }
+    // if (inputType === "deleteContentBackward") {
+    //   doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
+    //   const char = doc.characterBuffer
+    //   doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
+    // }
 
-    if (key === "Enter" && doc.menuMode === "closed") {
+    if (inputType === "insertParagraph") {
       const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
 
       // const prefix = match?.[1]?.trim() ?? ""
@@ -223,76 +273,21 @@ docEle.addEventListener("keydown", (ev) => {
       doc.characterBuffer = ""
       doc.mode = "Action"
     }
-  }
 
-  if (doc.menuMode !== "closed") {
-    if (key === "Escape") doc.menuMode = "closed"
-
-    if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight") ev.preventDefault()
-    if (key === "ArrowUp" && doc.menuIndex > 0) doc.menuIndex--
-    if (key === "ArrowDown" && doc.menuIndex < doc.menuItems.length - 1) doc.menuIndex++
-    if (key === "ArrowLeft" && !doc.characterBuffer) doc.menuMode = "closed"
-
-    if (key === "Enter") {
-      if (doc.menuMode === "sceneDesignation") {
-        ev.preventDefault()
-        const item = `${doc.menuItems[doc.menuIndex]} `
-        document.execCommand("insertText", false, item)
-        doc.characterBuffer = item
-        doc.menuMode = "closed"
-        doc.menuItems = []
-
-        return
-      }
-
-      if (doc.menuMode === "sceneLocation") {
-        ev.preventDefault()
-        const item = `${doc.menuItems[doc.menuIndex]} `
-        document.execCommand("insertText", false, item)
-        doc.characterBuffer = item
-        doc.menuMode = "closed"
-        doc.menuItems = []
-
-        return
-      }
-
-      if (doc.menuMode === "sceneTime") {
-        ev.preventDefault()
-        const item = ` ${doc.menuItems[doc.menuIndex]}`
-        document.execCommand("insertText", false, item)
-        doc.characterBuffer = item
-        doc.menuMode = "closed"
-        doc.menuItems = []
-
-        return
-      }
-
-      if (doc.menuMode === "charPicker") {
-        // BUG if there is text in the char line it just add to it
-        document.execCommand("insertText", false, doc.menuItems[doc.menuIndex] ?? "")
-        doc.mode = "Dialogue"
-        doc.menuMode = "closed"
-
-        return
-      }
-    }
     return
   }
+})
+
+docEle.addEventListener("keyup", (ev) => {
+  const { key } = ev
+  if (doc.menuMode !== "closed") return
 
   if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight" || key === "ArrowLeft" || key === "Backspace") {
-    setTimeout(() => {
-      doc.menuMode = "closed"
-      const currentClass = getCurrentDiv()?.className ?? ""
-      // todo celarn filter and chr menu if not char
-      if (currentClass === "scene-heading") doc.mode = "Scene Heading"
-      if (currentClass === "action") doc.mode = "Action"
-      if (currentClass === "dialogue") doc.mode = "Dialogue"
-      if (currentClass === "character") doc.mode = "Character"
-    }, 0)
+    const currentClass = getCurrentDiv()?.className ?? ""
+    // todo celarn filter and chr menu if not char
+    if (currentClass === "scene-heading") doc.mode = "Scene Heading"
+    if (currentClass === "action") doc.mode = "Action"
+    if (currentClass === "dialogue") doc.mode = "Dialogue"
+    if (currentClass === "character") doc.mode = "Character"
   }
-
-  // if (doc.menuMode === "charPicker") return charPickerMenuKeys(ev, getCurrentDiv()!)
-  // if (doc.menuMode === "format") return formatMenuKeys(ev)
-
-  // onKeyDown(ev, getCurrentDiv()!)
 })

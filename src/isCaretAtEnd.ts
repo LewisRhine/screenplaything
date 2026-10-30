@@ -4,10 +4,12 @@ export function isCaretAtEnd(element: HTMLElement): boolean {
     return false;
   }
 
-  // Ensure the element is currently focused
-  if (document.activeElement !== element) {
-    return false;
-  }
+  console.log(element)
+//   // Ensure the element is currently focused
+//   if (document.activeElement !== element) {
+// 
+//     return false;
+//   }
 
   const range = selection.getRangeAt(0);
   
