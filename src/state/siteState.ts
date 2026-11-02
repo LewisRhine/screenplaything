@@ -1,6 +1,6 @@
 import { newState } from "../state"
 
-export type Mode = "Action" | "Character" | "Dialogue" | "Scene Heading"
+export type Mode = "Action" | "Character" | "Parenthetical" | "Dialogue" | "Scene Heading"
 
 type MenuModes = "closed" | "charPicker" | "charExt" | "format" | "sceneDesignation" | "sceneLocation" | "sceneTime"
 
@@ -8,7 +8,7 @@ type SceneDesignation = "INT." | "EXT." | "INT/EXT."
 
 export const sceneDesignationsMenuItems: readonly SceneDesignation[] = ["INT.", "EXT.", "INT/EXT."]
 export const sceneTimeMenuItems: readonly string[] = ["Day", "Night"]
-export const formatMenuItems: readonly Mode[] = ["Scene Heading", "Action", "Character", "Dialogue"]
+export const formatMenuItems: readonly Mode[] = ["Scene Heading", "Action", "Character", "Parenthetical", "Dialogue"]
 
 export const doc = newState({
   mode: "Action" as Mode,
@@ -19,7 +19,7 @@ export const doc = newState({
   menuItems: [] as string[],
   menuItemsFilter: [] as string[],
 
-  locations: ["The House"] as string[],
+  locations: ["THE BAR"] as string[],
   sceneDesBuffer: "",
   sceneLocationBuffer: "",
   sceneTimeBuffer: "",

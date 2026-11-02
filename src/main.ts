@@ -2,7 +2,13 @@ import { attachSmoothCaret } from "./caret"
 import { getCurrentDiv } from "./getCurrentDiv"
 import { isCaretAtEnd } from "./isCaretAtEnd"
 import { attachPagination } from "./pagination"
-import { caretPosition, doc, sceneDesignationsMenuItems, sceneTimeMenuItems } from "./state/siteState"
+import {
+  caretPosition,
+  doc,
+  sceneDesignationsMenuItems,
+  sceneTimeMenuItems,
+  type CaretPosition,
+} from "./state/siteState"
 import "./style.css"
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
@@ -48,11 +54,10 @@ doc.sub(() => {
   }
 })
 
-caretPosition.sub(() => {
-  // this is so the mode get is pickedup kind of an issue with the state sytem.
-  if (!caretPosition.height && !caretPosition.left && !caretPosition.top) return
+function checkForMenu() {
   const currentDiv = getCurrentDiv()
   if (!currentDiv) return
+  doc.menuMode = "closed"
 
   if (doc.mode === "Scene Heading") {
     const { sceneDesBuffer, sceneLocationBuffer, sceneTimeBuffer } = doc
@@ -71,7 +76,21 @@ caretPosition.sub(() => {
     if (doc.characters.length === 0) return
     if (!doc.characterBuffer) doc.menuMode = "charPicker"
   }
+}
+
+// -- this is bad
+doc.sub(() => {
+  // this is so the mode get is pickedup kind of an issue with the state sytem.
+  if (!doc.mode && !doc.characterBuffer) return
+  checkForMenu()
 })
+
+caretPosition.sub(() => {
+  // this is so the mode get is pickedup kind of an issue with the state sytem.
+  if (!caretPosition.height && !caretPosition.left && !caretPosition.top) return
+  checkForMenu()
+})
+// -- this is bad
 
 // -------- Mode el
 doc.sub(() => {
@@ -89,8 +108,15 @@ doc.sub(() => {
 
   if (doc.mode === "Action") currentDiv.className = "action"
   if (doc.mode === "Scene Heading") currentDiv.className = "scene-heading"
-  if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
   if (doc.mode === "Character") currentDiv.className = "character"
+  if (doc.mode === "Dialogue") currentDiv.className = "dialogue"
+  if (doc.mode === "Parenthetical") {
+    if (!currentDiv.textContent) {
+      document.execCommand("insertText", false, "()")
+      moveCaretLeft()
+    }
+    currentDiv.className = "parenthetical" //todo add css
+  }
 })
 // --------
 
@@ -162,8 +188,16 @@ docEle.addEventListener("keydown", (ev) => {
 
   if (key === "Tab") {
     ev.preventDefault()
-    if (doc.menuMode !== "closed" || getCurrentDiv()?.textContent) return
+    const currentDiv = getCurrentDiv()
+    if (doc.menuMode !== "closed" || (currentDiv?.textContent && currentDiv?.textContent !== "()")) return
+
     if (doc.mode === "Character") return (doc.mode = "Action")
+    if (doc.mode === "Dialogue") return (doc.mode = "Parenthetical")
+    if (doc.mode === "Parenthetical") {
+      doc.mode = "Dialogue"
+      if (currentDiv) currentDiv.textContent = ""
+      return
+    }
     if (doc.mode === "Scene Heading") return (doc.mode = "Action")
     if (doc.mode === "Action") {
       if (shiftKey) doc.mode = "Scene Heading"
@@ -235,16 +269,9 @@ docEle.addEventListener("input", (ev) => {
 
   const { data, inputType } = ev
 
-  if (data) {
-    doc.characterBuffer += data.toUpperCase()
-    const char = doc.characterBuffer
-    doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
-  }
-
+  if (data) doc.characterBuffer += data.toUpperCase()
   if (inputType === "deleteContentBackward") {
     doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
-    const char = doc.characterBuffer
-    doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
   }
 
   if (doc.mode === "Character") {
@@ -261,7 +288,7 @@ docEle.addEventListener("input", (ev) => {
         return
       }
 
-      const name = doc.characterBuffer.replace(/\([^)]*\)/g, '').trim()
+      const name = doc.characterBuffer.replace(/\([^)]*\)/g, "").trim()
       if (name && !doc.characters.includes(name)) doc.characters.push(name)
       doc.characterBuffer = ""
       doc.mode = "Dialogue"
@@ -275,27 +302,14 @@ docEle.addEventListener("input", (ev) => {
     return
   }
 
+  if (doc.mode === "Parenthetical") {
+    if (inputType === "insertParagraph") doc.mode = "Dialogue"
+    return
+  }
+
   if (doc.mode === "Scene Heading") {
-    // if (data) {
-    //   doc.characterBuffer += data.toLocaleUpperCase()
-    //   const char = doc.characterBuffer
-    //   doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
-    // }
-
-    // if (inputType === "deleteContentBackward") {
-    //   doc.characterBuffer = doc.characterBuffer.slice(0, doc.characterBuffer.length - 1)
-    //   const char = doc.characterBuffer
-    //   doc.menuItemsFilter = doc.menuItems.filter((value) => value.slice(0, char.length) === char)
-    // }
-
     if (inputType === "insertParagraph") {
-      //todo imp all this
-      const match = doc.characterBuffer.match(/^(?:(.*?)\.\s*)?(.+?)(?:\s*-\s*(.+))?$/)
-
-      // const prefix = match?.[1]?.trim() ?? ""
-      const location = match?.[2]?.trim() ?? ""
-      // const time = match?.[3]?.trim() ?? ""
-
+      const location = doc.sceneLocationBuffer.toUpperCase().trim()
       if (location && !doc.locations.includes(location)) doc.locations.push(location)
       doc.characterBuffer = ""
       doc.mode = "Action"
@@ -307,6 +321,22 @@ docEle.addEventListener("input", (ev) => {
 
 docEle.addEventListener("keyup", (ev) => {
   const { key } = ev
+
+  if (doc.menuMode === "charPicker") {
+    const char = doc.characterBuffer
+    doc.menuItemsFilter = doc.characters.filter((value) => value.slice(0, char.length) === char)
+  }
+
+  if (doc.menuMode === "sceneDesignation") {
+    const char = doc.characterBuffer
+    doc.menuItemsFilter = sceneDesignationsMenuItems.filter((value) => value.slice(0, char.length) === char)
+  }
+
+  if (doc.menuMode === "sceneLocation") {
+    const char = doc.sceneLocationBuffer
+    doc.menuItemsFilter = doc.locations.filter((value) => value.slice(0, char.length) === char)
+  }
+
   if (doc.menuMode !== "closed") return
 
   if (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowRight" || key === "ArrowLeft" || key === "Backspace") {
@@ -314,7 +344,16 @@ docEle.addEventListener("keyup", (ev) => {
     // todo celarn filter and chr menu if not char
     if (currentClass === "scene-heading") doc.mode = "Scene Heading"
     if (currentClass === "action") doc.mode = "Action"
-    if (currentClass === "dialogue") doc.mode = "Dialogue"
     if (currentClass === "character") doc.mode = "Character"
+    if (currentClass === "dialogue") doc.mode = "Dialogue"
+    if (currentClass === "parenthetical") doc.mode = "Parenthetical"
   }
 })
+
+function moveCaretLeft() {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount == 0) return
+  const range = selection.getRangeAt(0)
+  range.collapse(false) // Collapse to end of current selection
+  selection.modify("move", "backward", "character")
+}
